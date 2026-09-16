@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ब्याज खाता / Loan Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-16">
+
+    <!-- Navbar -->
+    <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-coins text-amber-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight" data-en="Interest Manager" data-hi="ब्याज खाता प्रबंधक">ब्याज खाता प्रबंधक</h1>
+                    <p class="text-xs text-slate-400" data-en="Digital Ledger & Calculation" data-hi="डिजिटल ऋण एवं ब्याज रजिस्टर">डिजिटल ऋण एवं ब्याज रजिस्टर</p>
+                </div>
+            </div>
+
+            <!-- Language Toggle -->
+            <button onclick="toggleLanguage()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-medium px-3 py-1.5 rounded-lg border border-slate-700 text-sm transition">
+                <i class="fa-solid fa-language"></i>
+                <span id="lang-btn-text">English</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 mt-6 space-y-6">
+
+        <!-- Top Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider" data-en="Total Customers" data-hi="कुल ग्राहक">कुल ग्राहक</span>
+                    <i class="fa-solid fa-users text-indigo-500"></i>
+                </div>
+                <h3 id="stat-customers" class="text-2xl font-bold text-slate-900">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider" data-en="Principal Given" data-hi="कुल मूलधन दिया">कुल मूलधन दिया</span>
+                    <i class="fa-solid fa-wallet text-emerald-500"></i>
+                </div>
+                <h3 id="stat-principal" class="text-2xl font-bold text-slate-900">₹0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider" data-en="Accrued Interest" data-hi="कुल अर्जित ब्याज">कुल अर्जित ब्याज</span>
+                    <i class="fa-solid fa-arrow-trend-up text-amber-500"></i>
+                </div>
+                <h3 id="stat-interest" class="text-2xl font-bold text-amber-600">₹0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider" data-en="Total Receivable" data-hi="कुल मिलने योग्य">कुल मिलने योग्य</span>
+                    <i class="fa-solid fa-money-bill-transfer text-blue-500"></i>
+                </div>
+                <h3 id="stat-total" class="text-2xl font-bold text-indigo-600">₹0</h3>
+            </div>
+        </div>
+
+        <!-- Loan Entry Form -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6">
+            <h2 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-user-plus text-indigo-600"></i>
+                <span data-en="New Loan Entry / Calculation" data-hi="नया खाता जोड़ें / ऑटो ब्याज गणना">नया खाता जोड़ें / ऑटो ब्याज गणना</span>
+            </h2>
+
+            <form id="loan-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Customer Name -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1" data-en="Customer Name *" data-hi="ग्राहक का नाम *">ग्राहक का नाम *</label>
+                        <input type="text" id="cust-name" required placeholder="उदा. राहुल शर्मा" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                    </div>
+
+                    <!-- Customer Mobile -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1" data-en="Mobile No. (WhatsApp) *" data-hi="मोबाइल नं. (व्हाट्सएप) *">मोबाइल नं. (व्हाट्सएप) *</label>
+                        <input type="tel" id="cust-phone" pattern="[0-9]{10}" required placeholder="10 डिजिट मोबाइल नंबर" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                    </div>
+
+                    <!-- Loan Amount -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1" data-en="Loan Amount (Principal ₹) *" data-hi="ऋण राशि (मूलधन ₹) *">ऋण राशि (मूलधन ₹) *</label>
+                        <input type="number" id="cust-amount" min="1" required placeholder="उदा. 50000" oninput="calcPreview()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                    </div>
+
+                    <!-- Interest Rate -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1" data-en="Interest Rate (%) *" data-hi="ब्याज दर (%) *">ब्याज दर (%) *</label>
+                        <div class="flex gap-2">
+                            <input type="number" step="0.01" id="cust-rate" min="0.01" required placeholder="उदा. 2 या 3" oninput="calcPreview()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                            <select id="cust-rate-type" onchange="calcPreview()" class="px-2.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-xs font-medium focus:ring-2 focus:ring-indigo-500">
+                                <option value="monthly" data-en="Monthly (% प्रति माह)" data-hi="% प्रति माह (% Monthly)">% प्रति माह</option>
+                                <option value="yearly" data-en="Yearly (% प्रति वर्ष)" data-hi="% प्रति वर्ष (% Yearly)">% प्रति वर्ष</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1" data-en="Loan Given Date *" data-hi="पैसा देने की तारीख *">पैसा देने की तारीख *</label>
+                        <input type="date" id="cust-date" required onchange="calcPreview()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                    </div>
+
+                    <!-- Calculation Till Date -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1" data-en="Calculate Till Date (Default: Today)" data-hi="गणना की तारीख (डिफ़ॉल्ट: आज तक)">गणना की तारीख (डिफ़ॉल्ट: आज तक)</label>
+                        <input type="date" id="cust-end-date" onchange="calcPreview()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                    </div>
+                </div>
+
+                <!-- Live Auto-Calculation Box -->
+                <div class="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <div class="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-calculator text-indigo-500"></i>
+                        <span data-en="Live Calculation Preview" data-hi="लाइव ऑटो गणना प्रिव्यू">लाइव ऑटो गणना प्रिव्यू</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        <div>
+                            <span class="text-slate-500 text-xs block" data-en="Duration:" data-hi="अवधि (समय):">अवधि (समय):</span>
+                            <span id="prev-duration" class="font-semibold text-slate-800">0 दिन</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 text-xs block" data-en="Accrued Interest:" data-hi="ब्याज राशि:">ब्याज राशि:</span>
+                            <span id="prev-interest" class="font-bold text-amber-600">₹0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 text-xs block" data-en="Total Payable:" data-hi="कुल देय (मूलधन+ब्याज):">कुल देय (मूलधन+ब्याज):</span>
+                            <span id="prev-total" class="font-bold text-indigo-600">₹0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 text-xs block" data-en="Daily Accrual:" data-hi="प्रति दिन ब्याज:">प्रति दिन ब्याज:</span>
+                            <span id="prev-daily" class="font-medium text-slate-600">₹0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes / Address Optional -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1" data-en="Security / Address / Remarks (Optional)" data-hi="पता / गिरवी विवरण / टिप्पणी (वैकल्पिक)">पता / गिरवी विवरण / टिप्पणी (वैकल्पिक)</label>
+                    <input type="text" id="cust-notes" placeholder="उदा. आधार कार्ड जमा, गहने, या निवास स्थान" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="reset" onclick="resetLivePreview()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition" data-en="Reset Form" data-hi="फॉर्म रीसेट करें">फॉर्म रीसेट करें</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-200 transition flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span data-en="Save Account" data-hi="खाता सुरक्षित करें">खाता सुरक्षित करें</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Customer Records Table -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-4 md:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-base md:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-600"></i>
+                        <span data-en="Customer Ledger & Reminders" data-hi="ग्राहक रिकॉर्ड एवं रिमाइंडर सूची">ग्राहक रिकॉर्ड एवं रिमाइंडर सूची</span>
+                    </h2>
+                    <p class="text-xs text-slate-500" data-en="Auto-updated as per current date" data-hi="वर्तमान तारीख के अनुसार ऑटो-अपडेटेड">वर्तमान तारीख के अनुसार ऑटो-अपडेटेड</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <div class="relative flex-1 md:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="search-input" onkeyup="filterRecords()" placeholder="नाम या मोबाइल से खोजें..." class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <button onclick="exportToPDF()" class="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span data-en="Download PDF" data-hi="PDF डाउनलोड">PDF डाउनलोड</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Printable wrapper -->
+            <div id="pdf-container" class="overflow-x-auto">
+                <div id="pdf-header" class="hidden p-4 border-b text-center">
+                    <h2 class="text-xl font-bold text-slate-900">ब्याज खाता विवरण (Loan & Interest Statement)</h2>
+                    <p class="text-xs text-slate-500" id="pdf-generated-date"></p>
+                </div>
+                
+                <table class="w-full text-left border-collapse text-xs md:text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                            <th class="py-3 px-4" data-en="Customer" data-hi="ग्राहक">ग्राहक</th>
+                            <th class="py-3 px-4" data-en="Principal" data-hi="मूलधन">मूलधन</th>
+                            <th class="py-3 px-4" data-en="Rate & Start Date" data-hi="दर व तारीख">दर व तारीख</th>
+                            <th class="py-3 px-4" data-en="Days / Months" data-hi="समय अवधि">समय अवधि</th>
+                            <th class="py-3 px-4 text-amber-600" data-en="Accrued Interest" data-hi="ब्याज">ब्याज</th>
+                            <th class="py-3 px-4 text-indigo-700" data-en="Total Due" data-hi="कुल देय">कुल देय</th>
+                            <th class="py-3 px-4 text-center action-col" data-en="Actions & Reminder" data-hi="रिमाइंडर व एक्शन">रिमाइंडर व एक्शन</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loan-table-body" class="divide-y divide-slate-100">
+                        <!-- Dynamic Rows will appear here -->
+                    </tbody>
+                </table>
+                <div id="no-records" class="text-center py-10 text-slate-400 hidden">
+                    <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
+                    <p data-en="No loan records found. Add a new customer above." data-hi="कोई खाता नहीं मिला। ऊपर नया ग्राहक जोड़ें।">कोई खाता नहीं मिला। ऊपर नया ग्राहक जोड़ें।</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // State management
+        let currentLang = 'hi';
+        let loanRecords = JSON.parse(localStorage.getItem('byaj_khata_records')) || [];
+
+        // Set default dates
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('cust-date').value = today;
+            document.getElementById('cust-end-date').value = today;
+            renderRecords();
+            updateStats();
+        });
+
+        // Language toggle
+        function toggleLanguage() {
+            currentLang = currentLang === 'hi' ? 'en' : 'hi';
+            document.getElementById('lang-btn-text').innerText = currentLang === 'hi' ? 'English' : 'हिंदी';
+            
+            document.querySelectorAll('[data-hi]').forEach(el => {
+                el.innerText = currentLang === 'hi' ? el.getAttribute('data-hi') : el.getAttribute('data-en');
+            });
+
+            // Re-render table for language changes in action buttons
+            renderRecords();
+        }
+
+        // Exact day and interest calculations
+        function calculateInterestDetails(principal, rate, rateType, startDateStr, endDateStr) {
+            const start = new Date(startDateStr);
+            const end = endDateStr ? new Date(endDateStr) : new Date();
+            
+            // Diff in days
+            const diffTime = Math.max(0, end - start);
+            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            const months = Math.floor(totalDays / 30);
+            const remDays = totalDays % 30;
+
+            let interest = 0;
+            let dailyRate = 0;
+
+            if (rateType === 'monthly') {
+                // In Indian local finance, monthly % means X% per 30 days or per month
+                // Rate per year = rate * 12
+                // Simple interest formula: P * (R_yearly / 100) * (days / 365)
+                const yearlyRate = rate * 12;
+                dailyRate = (principal * yearlyRate) / (100 * 365);
+                interest = (principal * yearlyRate * totalDays) / (100 * 365);
+            } else {
+                dailyRate = (principal * rate) / (100 * 365);
+                interest = (principal * rate * totalDays) / (100 * 365);
+            }
+
+            const total = principal + interest;
+
+            return {
+                days: totalDays,
+                months: months,
+                remDays: remDays,
+                interest: Math.round(interest),
+                total: Math.round(total),
+                dailyInterest: dailyRate.toFixed(2)
+            };
+        }
+
+        // Live Preview on form
+        function calcPreview() {
+            const p = parseFloat(document.getElementById('cust-amount').value) || 0;
+            const r = parseFloat(document.getElementById('cust-rate').value) || 0;
+            const type = document.getElementById('cust-rate-type').value;
+            const sDate = document.getElementById('cust-date').value;
+            const eDate = document.getElementById('cust-end-date').value;
+
+            if (!sDate || p <= 0 || r <= 0) {
+                resetLivePreview();
+                return;
+            }
+
+            const res = calculateInterestDetails(p, r, type, sDate, eDate);
+            const durationText = currentLang === 'hi' 
+                ? `${res.days} दिन (${res.months} माह ${res.remDays} दिन)`
+                : `${res.days} Days (${res.months}m ${res.remDays}d)`;
+
+            document.getElementById('prev-duration').innerText = durationText;
+            document.getElementById('prev-interest').innerText = `₹${res.interest.toLocaleString('en-IN')}`;
+            document.getElementById('prev-total').innerText = `₹${res.total.toLocaleString('en-IN')}`;
+            document.getElementById('prev-daily').innerText = `₹${res.dailyInterest} /दिन`;
+        }
+
+        function resetLivePreview() {
+            document.getElementById('prev-duration').innerText = currentLang === 'hi' ? '0 दिन' : '0 Days';
+            document.getElementById('prev-interest').innerText = '₹0';
+            document.getElementById('prev-total').innerText = '₹0';
+            document.getElementById('prev-daily').innerText = '₹0';
+        }
+
+        // Handle Add/Save
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const record = {
+                id: Date.now(),
+                name: document.getElementById('cust-name').value.trim(),
+                phone: document.getElementById('cust-phone').value.trim(),
+                principal: parseFloat(document.getElementById('cust-amount').value),
+                rate: parseFloat(document.getElementById('cust-rate').value),
+                rateType: document.getElementById('cust-rate-type').value,
+                startDate: document.getElementById('cust-date').value,
+                notes: document.getElementById('cust-notes').value.trim()
+            };
+
+            loanRecords.unshift(record);
+            saveToStorage();
+            renderRecords();
+            updateStats();
+
+            // Reset
+            document.getElementById('loan-form').reset();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('cust-date').value = today;
+            document.getElementById('cust-end-date').value = today;
+            resetLivePreview();
+            alert(currentLang === 'hi' ? "खाता सफलतापूर्वक सेव हो गया!" : "Account saved successfully!");
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('byaj_khata_records', JSON.stringify(loanRecords));
+        }
+
+        function deleteRecord(id) {
+            const confirmMsg = currentLang === 'hi' ? "क्या आप सचमुच यह खाता हटाना चाहते हैं?" : "Are you sure you want to delete this record?";
+            if (confirm(confirmMsg)) {
+                loanRecords = loanRecords.filter(item => item.id !== id);
+                saveToStorage();
+                renderRecords();
+                updateStats();
+            }
+        }
+
+        // WhatsApp Reminder Generator
+        function sendWhatsAppReminder(id) {
+            const rec = loanRecords.find(item => item.id === id);
+            if (!rec) return;
+
+            const calc = calculateInterestDetails(rec.principal, rec.rate, rec.rateType, rec.startDate, new Date().toISOString().split('T')[0]);
+            
+            let message = "";
+            if (currentLang === 'hi') {
+                message = `*सादर नमस्ते, ${rec.name} जी!*%0A%0Aयह आपके ऋण खाते का ब्याज विवरण है:%0A----------------------------%0A💰 *मूलधन (Principal):* ₹${rec.principal.toLocaleString('en-IN')}%0A📅 *ऋण दिनांक:* ${rec.startDate}%0A📈 *ब्याज दर:* ${rec.rate}% ${rec.rateType === 'monthly' ? 'प्रति माह' : 'वार्षिक'}%0A⏳ *कुल अवधि:* ${calc.days} दिन (${calc.months} महीने ${calc.remDays} दिन)%0A💵 *कुल ब्याज:* ₹${calc.interest.toLocaleString('en-IN')}%0A🔔 *कुल देय राशि (Total Payable):* ₹${calc.total.toLocaleString('en-IN')}%0A----------------------------%0Aकृपया समय पर भुगतान सुनिश्चित करें। धन्यवाद!`;
+            } else {
+                message = `*Hello ${rec.name},*%0A%0AHere is the statement of your loan account:%0A----------------------------%0A💰 *Principal Amount:* ₹${rec.principal.toLocaleString('en-IN')}%0A📅 *Loan Start Date:* ${rec.startDate}%0A📈 *Interest Rate:* ${rec.rate}% ${rec.rateType === 'monthly' ? 'per month' : 'per year'}%0A⏳ *Elapsed Duration:* ${calc.days} days (${calc.months}m ${calc.remDays}d)%0A💵 *Interest Accrued:* ₹${calc.interest.toLocaleString('en-IN')}%0A🔔 *Total Amount Due:* ₹${calc.total.toLocaleString('en-IN')}%0A----------------------------%0APlease make the settlement at the earliest. Thank you!`;
+            }
+
+            const cleanPhone = rec.phone.replace(/[^0-9]/g, '');
+            const targetPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+            const waUrl = `https://wa.me/${targetPhone}?text=${message}`;
+            window.open(waUrl, '_blank');
+        }
+
+        // Render table
+        function renderRecords(filteredList = null) {
+            const list = filteredList || loanRecords;
+            const tbody = document.getElementById('loan-table-body');
+            const noRec = document.getElementById('no-records');
+            tbody.innerHTML = '';
+
+            if (list.length === 0) {
+                noRec.classList.remove('hidden');
+                return;
+            }
+            noRec.classList.add('hidden');
+
+            const today = new Date().toISOString().split('T')[0];
+
+            list.forEach(item => {
+                const calc = calculateInterestDetails(item.principal, item.rate, item.rateType, item.startDate, today);
+                const rateBadge = item.rateType === 'monthly' 
+                    ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded">${item.rate}% /माह</span>`
+                    : `<span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded">${item.rate}% /वर्ष</span>`;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="py-3 px-4">
+                        <div class="font-bold text-slate-800 text-sm">${item.name}</div>
+                        <div class="text-xs text-slate-500"><i class="fa-solid fa-phone text-[10px]"></i> ${item.phone}</div>
+                        ${item.notes ? `<div class="text-[11px] text-slate-400 italic mt-0.5">${item.notes}</div>` : ''}
+                    </td>
+                    <td class="py-3 px-4 font-semibold text-slate-800">
+                        ₹${item.principal.toLocaleString('en-IN')}
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="mb-1">${rateBadge}</div>
+                        <div class="text-[11px] text-slate-500">${item.startDate}</div>
+                    </td>
+                    <td class="py-3 px-4 text-xs font-medium text-slate-700">
+                        ${calc.days} दिन
+                        <span class="block text-[11px] text-slate-400">(${calc.months} माह ${calc.remDays} दिन)</span>
+                    </td>
+                    <td class="py-3 px-4 font-bold text-amber-600">
+                        ₹${calc.interest.toLocaleString('en-IN')}
+                    </td>
+                    <td class="py-3 px-4 font-bold text-indigo-700 text-sm">
+                        ₹${calc.total.toLocaleString('en-IN')}
+                    </td>
+                    <td class="py-3 px-4 text-center action-col">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="sendWhatsAppReminder(${item.id})" title="${currentLang === 'hi' ? 'व्हाट्सएप रिमाइंडर भेजें' : 'Send WhatsApp Reminder'}" class="bg-emerald-500 hover:bg-emerald-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow transition">
+                                <i class="fa-brands fa-whatsapp text-sm"></i>
+                            </button>
+                            <button onclick="deleteRecord(${item.id})" title="${currentLang === 'hi' ? 'हटाएं' : 'Delete'}" class="bg-slate-100 hover:bg-rose-100 text-slate-400 hover:text-rose-600 w-8 h-8 rounded-lg flex items-center justify-center transition">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Summary stats update
+        function updateStats() {
+            let totalP = 0;
+            let totalI = 0;
+            let totalD = 0;
+            const today = new Date().toISOString().split('T')[0];
+
+            loanRecords.forEach(item => {
+                const c = calculateInterestDetails(item.principal, item.rate, item.rateType, item.startDate, today);
+                totalP += item.principal;
+                totalI += c.interest;
+                totalD += c.total;
+            });
+
+            document.getElementById('stat-customers').innerText = loanRecords.length;
+            document.getElementById('stat-principal').innerText = `₹${totalP.toLocaleString('en-IN')}`;
+            document.getElementById('stat-interest').innerText = `₹${totalI.toLocaleString('en-IN')}`;
+            document.getElementById('stat-total').innerText = `₹${totalD.toLocaleString('en-IN')}`;
+        }
+
+        // Filter search
+        function filterRecords() {
+            const val = document.getElementById('search-input').value.toLowerCase();
+            const filtered = loanRecords.filter(item => 
+                item.name.toLowerCase().includes(val) || item.phone.includes(val)
+            );
+            renderRecords(filtered);
+        }
+
+        // PDF Export
+        function exportToPDF() {
+            const element = document.getElementById('pdf-container');
+            const pdfHeader = document.getElementById('pdf-header');
+            const actionCols = document.querySelectorAll('.action-col');
+
+            // Setup for printing
+            pdfHeader.classList.remove('hidden');
+            document.getElementById('pdf-generated-date').innerText = 
+                `${currentLang === 'hi' ? 'दिनांक:' : 'Date:'} ${new Date().toLocaleDateString('en-IN')}`;
+            
+            actionCols.forEach(el => el.style.display = 'none');
+
+            const opt = {
+                margin: 8,
+                filename: `Byaj_Khata_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Restore after printing
+                pdfHeader.classList.add('hidden');
+                actionCols.forEach(el => el.style.display = '');
+            });
+        }
+    </script>
+</body>
+</html>
